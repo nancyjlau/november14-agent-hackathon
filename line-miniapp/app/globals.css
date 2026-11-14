@@ -40,3 +40,4 @@ h1>span{color:#2f4a20}.status-dot{background:#2f4a20}
 .generation-mode{color:#2f4a20;background:#fffefae6;border-color:#fffefa}
 .site-header nav,nav{background:#fffefad9}.site-header{border-bottom-color:#fffefa99}.lab-heading,.site-footer{border-top-color:#fffefa99}
 .citation-eyebrow{display:block}
+.lab-grid{grid-template-columns:minmax(0,1fr);max-width:640px;margin:0 auto;gap:8px}
