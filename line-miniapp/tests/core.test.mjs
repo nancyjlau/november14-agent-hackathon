@@ -42,6 +42,22 @@ test('arXiv parser extracts IDs, canonical links and XML entities',()=>{const p=
 test('raw webhook signature verification rejects tampering',async()=>{const body='{"events":[]}';const signature=await sign(body);assert.equal(await verifySignature(body,signature,'test-secret'),true);assert.equal(await verifySignature(body+' ',signature,'test-secret'),false);assert.equal(await verifySignature(body,'not-base64','test-secret'),false);});
 test('generation validates length, speaker labels and topic',async()=>{const input={messages:chat,vibe:'lowkey',nerd:2,topic:'auto',variation:0};const [ok,result]=await gen(input);assert.equal(ok.status,200);assert.equal(result.mode,'crafted');assert.equal(result.suggestions.length,3);assert.ok(result.suggestions.every(s=>result.papers.some(p=>p.id===s.paperId)));assert.equal((await gen({...input,messages:[]}))[0].status,400);assert.equal((await gen({...input,messages:[{id:'1',role:'you',text:'hello'}]}))[0].status,400);assert.equal((await gen({...input,topic:'rag'}))[0].status,400);});
 test('explicit rejection produces a boundary response rather than flirting',async()=>{const [response,value]=await gen({messages:[{id:'1',role:'them',text:'please stop texting me'}],vibe:'bold',nerd:3,topic:'auto'});assert.equal(response.status,200);assert.equal(value.boundary,true);assert.deepEqual(value.suggestions,[]);});
+test('forged public identity headers cannot authorize paid model calls',async()=>{
+  const previousFetch=globalThis.fetch;
+  const previousKey=env.OPENAI_API_KEY;
+  env.OPENAI_API_KEY='not-a-real-key';
+  let outbound=0;
+  globalThis.fetch=async()=>{outbound++;throw new Error('No provider call should occur');};
+  try {
+    const response=await generate(new Request('https://example.com/api/generate',{
+      method:'POST',headers:{'oai-authenticated-user-id':'forged'},
+      body:JSON.stringify({messages:chat,vibe:'lowkey',nerd:2,topic:'auto'}),
+    }));
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).mode,'crafted');
+    assert.equal(outbound,0);
+  } finally {globalThis.fetch=previousFetch;env.OPENAI_API_KEY=previousKey;}
+});
 test('unauthenticated context cannot be read, and wrong token audience is rejected',async()=>{assert.equal((await getContext(new Request('https://example.com/api/context'))).status,401);await assert.rejects(()=>lineUser(authRequest('bad-audience')),e=>e.status===401);});
 test('valid LINE events are deduplicated and group messages are ignored',async()=>{assert.equal((await sendWebhook([event('m1'),event('m2'),event('other','U2'),{...event('group'),source:{type:'group',userId:'U1',groupId:'G1'}}])).status,200);assert.equal((await sendWebhook([event('m1')])).status,200);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM shared_messages').get().n,3);assert.equal(sent.length,2);assert.ok(sent[0].messages[1].template.actions[0].uri.includes('import=1'));});
 test('tampered webhook does not mutate message storage',async()=>{const before=db.prepare('SELECT COUNT(*) AS n FROM shared_messages').get().n;const response=await webhook(new Request('https://example.com/api/line/webhook',{method:'POST',body:JSON.stringify({events:[event('tampered')]}),headers:{'x-line-signature':'invalid'}}));assert.equal(response.status,401);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM shared_messages').get().n,before);});

@@ -17,7 +17,9 @@ export async function POST(request: Request) {
     if (messages.reduce((n, m) => n + m.text.length, 0) > 8000) throw new HttpError(400, "Keep the conversation under 8,000 characters.");
     if (!messages.some((m) => m.role === "them")) throw new HttpError(400, "Label at least one message as Them so we know what you're replying to.");
     if (respectsBoundary(messages)) return json(boundaryResult());
-    let aiAuthorized = Boolean(request.headers.get("oai-authenticated-user-id")) || env.ALLOW_ANONYMOUS_AI === "true";
+    // The public tunnel/Worker cannot trust client-supplied Sites identity headers.
+    // Paid calls require verified LINE identity unless local testing is explicitly enabled.
+    let aiAuthorized = env.ALLOW_ANONYMOUS_AI === "true";
     if (env.OPENAI_API_KEY && env.LIFF_CHANNEL_ID && request.headers.has("authorization")) {
       const user = await lineUser(request); await rateLimit(`generate:${user}`); aiAuthorized = true;
     }

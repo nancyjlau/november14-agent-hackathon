@@ -13,7 +13,7 @@ npm run dev
 
 Open the Local URL that the dev server prints. The sample conversation and the crafted, paper-specific replies work without any credentials.
 
-The dev server supports a local test sign-in at `/signin-with-chatgpt?return_to=/`. With `OPENAI_API_KEY` set, sign in there to test AI generation, or enable `ALLOW_ANONYMOUS_AI` for local-only testing. Verified LINE sessions also authorize AI generation.
+AI generation requires a verified LINE session. `ALLOW_ANONYMOUS_AI=true` is available for local-only testing; keep it false on the public tunnel. Client-supplied identity headers never authorize paid calls.
 
 ```sh
 npm run check   # TypeScript
@@ -25,7 +25,9 @@ npm start       # serves the production build with Wrangler, after npm run build
 
 ## Configuration
 
-Copy `.dev.vars.example` to `.dev.vars` for local development. In production, set these as Worker secrets.
+The repository contains only `.dev.vars.example` with blank placeholders. For the built preview and public tunnel, `npm start` loads credentials from `~/.config/rizz-et-al/.dev.vars`, **outside the repository**. It creates the external file on first run without overwriting an existing one. Set `RIZZ_RUNTIME_DIR` to another directory outside the checkout if needed. The plain Vite UI demo can use an ignored `.dev.vars`, but keep real hosted credentials in the external runtime file.
+
+For permanent Cloudflare hosting, set real keys as Worker runtime **secrets**, not build variables or source code. For example, `npx wrangler secret put OPENAI_API_KEY --config dist/server/wrangler.json` prompts for the value without putting it in the command. This requires an authenticated Cloudflare account and an existing deployed Worker.
 
 | Variable | Needed for | Notes |
 | --- | --- | --- |
@@ -52,7 +54,7 @@ npm start -- --port 8787
 cloudflared tunnel --protocol http2 --edge-ip-version 4 --url http://127.0.0.1:8787 --no-autoupdate
 ```
 
-Use the printed HTTPS URL for the LIFF endpoint, and that URL plus `/api/line/webhook` for the bot webhook. Keep both processes running. A Quick Tunnel URL changes when restarted and is for testing, not permanent hosting. `npm start` loads the ignored root `.dev.vars` file; secrets are not embedded in the build.
+Use the printed HTTPS URL for the LIFF endpoint, and that URL plus `/api/line/webhook` for the bot webhook. Keep both processes running. A Quick Tunnel URL changes when restarted and is for testing, not permanent hosting. `npm start` reads the external runtime secrets file; secret values are not embedded in the build.
 
 ## Connect LINE
 
