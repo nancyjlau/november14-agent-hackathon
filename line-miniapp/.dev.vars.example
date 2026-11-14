@@ -7,6 +7,5 @@ LIFF_CHANNEL_ID=
 LINE_CHANNEL_SECRET=
 LINE_CHANNEL_ACCESS_TOKEN=
 LINE_BOT_BASIC_ID=
-APP_URL=
 # For local AI testing only. Keep false on public deployments.
 ALLOW_ANONYMOUS_AI=false

@@ -10,7 +10,6 @@ declare namespace Cloudflare {
     LIFF_ID?: string;
     LIFF_CHANNEL_ID?: string;
     LINE_BOT_BASIC_ID?: string;
-    APP_URL?: string;
     ALLOW_ANONYMOUS_AI?: string;
   }
 }

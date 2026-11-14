@@ -1,65 +1,81 @@
-# rizz et al.
+# rizz et al. — LINE mini app
 
-**Make your move. Cite your sources.**
+The app behind [rizz et al.](../README.md): a Next.js app, built with vinext, that runs as a Cloudflare Worker and stores data in D1. This file covers running, configuring, and wiring it to LINE. The repository README explains what the app does and how it works.
 
-A LINE MINI App / LIFF companion for writing short, flirty texts that reference a concrete idea from a real ML paper. Every suggestion has its own arXiv citation and an explanation of the connection. The interface includes speaker-labeled chat context, lowkey/playful/bold styles, research topics, copy/share actions, a paper library, and browser-local saved lines.
-
-## Run
+## Run locally
 
 Requires Node.js 22.13 or later.
 
 ```sh
-cd line-miniapp
 npm ci
 npm run dev
 ```
 
-Open the Local URL printed by the server, normally http://127.0.0.1:5173. The sample conversations and crafted paper-specific examples work without credentials. Without an OpenAI key, examples are matched to topics and simple conversation cues; they are explicitly labeled and are not full AI personalization.
+Open the Local URL that the dev server prints. The sample conversation and the crafted, paper-specific replies work without any credentials.
+
+`npm run dev` signs you in as a local test user, so AI generation turns on as soon as `OPENAI_API_KEY` is set in `.dev.vars`.
 
 ```sh
-npm run check
-npm run build
+npm run check   # TypeScript
+npm run lint
+npm run build   # Worker in dist/server/, client assets in dist/client/
+npm start       # serves the production build with Wrangler, after npm run build
 ```
 
-The production output is a Cloudflare Worker under `dist/server/` with client assets under `dist/client/`. Hosting infrastructure follows `.openai/hosting.json`. A hosting project ID is not configured yet.
+## Configuration
+
+Copy `.dev.vars.example` to `.dev.vars` for local development. In production, set these as Worker secrets.
+
+| Variable | Needed for | Notes |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | AI-tailored replies | Without it, the app serves crafted example replies. |
+| `OPENAI_MODEL` | AI-tailored replies | Defaults to `gpt-4.1-mini`. |
+| `TAVILY_API_KEY` | Wider paper discovery | Without it, the server queries arXiv for a fixed set of titles per topic. |
+| `LIFF_ID` | LINE | The LIFF app ID. |
+| `LIFF_CHANNEL_ID` | LINE | The LINE Login or LINE MINI App channel ID, used to verify ID tokens. |
+| `LINE_CHANNEL_SECRET` | LINE | Messaging API channel secret, used to verify webhook signatures. |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE | Messaging API channel access token, used for bot replies. |
+| `LINE_BOT_BASIC_ID` | LINE | The bot's basic ID, used for the "add the LINE bot" link. |
+| `ALLOW_ANONYMOUS_AI` | Local testing | `true` enables AI for visitors who are not signed in, such as under `npm start`. Keep it `false` on a public deployment. |
+
+The Worker also needs a D1 binding named `DB` for LINE imports and rate limiting.
 
 ## Connect LINE
 
-The app cannot read LINE chat history. The intended flow is: select a few messages → forward text to the bot → tap Open app → label speakers → generate a reply. Forwarded messages do not preserve the original speakers, so labels must be confirmed in the app.
+The app cannot read LINE chat history. Users forward the messages they want help with to the bot, open the app, label who said each message, and generate a reply. Forwarded messages lose their original sender, so speaker labels have to be set in the app.
 
-1. Sign in to the [LINE Developers Console](https://developers.line.biz/console/) with your regular LINE account and create a provider.
-2. Create a LINE Official Account, enable its Messaging API, and keep its Messaging API channel under that provider.
-3. Create a LINE Login channel with a LIFF app, or a LINE MINI App channel, under the **same provider**. Using the same provider ensures bot and LIFF user IDs match. Set the app endpoint to your deployed HTTPS URL and enable `openid`. Enable `profile` only if you need it. Register your own LINE account as a tester while developing.
-4. Copy `.dev.vars.example` to `.dev.vars` and fill in the LINE values locally. `LIFF_CHANNEL_ID` is the Login/MINI App channel ID; `LINE_CHANNEL_SECRET` and `LINE_CHANNEL_ACCESS_TOKEN` belong to the **Messaging API** channel. `LIFF_ID` is the LIFF app ID. On production, configure these as runtime secrets.
-5. Set the Messaging API webhook to `https://YOUR_HOST/api/line/webhook`, verify it, then enable webhooks. Disable the account's automatic canned reply to avoid duplicate responses.
-6. Provision the `DB` D1 binding and apply the SQL files in `drizzle/` in order. The Sites deployment workflow applies hosted migrations; see below for local migrations.
-7. Add the bot as a friend and forward text. `/open` returns the app link, `/clear` deletes shared context. Enable LIFF's share target picker if you want its optional Share action.
+1. Sign in to the [LINE Developers Console](https://developers.line.biz/console/) and create a provider.
+2. Create a LINE Official Account, enable its Messaging API, and keep that Messaging API channel under the provider.
+3. Under the **same provider**, create a LINE Login channel with a LIFF app, or a LINE MINI App channel. A shared provider makes bot and LIFF user IDs match. Set the endpoint to the deployed HTTPS URL and enable the `openid` scope. While developing, register your LINE account as a tester.
+4. Fill in the LINE variables above.
+5. Set the Messaging API webhook URL to `https://YOUR_HOST/api/line/webhook`, verify it, and enable webhooks. Turn off the account's automatic greeting and auto-reply messages so users don't get duplicate replies.
+6. Create the D1 database and apply the SQL files in `drizzle/` in order.
+7. Add the bot as a friend and forward it some text. Enable LIFF's share target picker for the optional Share button.
 
-A custom domain is optional. The bot webhook and LIFF endpoint must be publicly reachable over HTTPS. An owner-private preview URL cannot serve as LINE's webhook.
+The webhook and LIFF endpoint must be reachable over public HTTPS.
 
-## AI generation and references
+### Bot commands
 
-Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default `gpt-4.1-mini`). Calls use the Responses API, structured output, and `store: false`. Generated citation IDs are validated against the supplied real papers; arbitrary model-generated citations are rejected. The prompt requires a specific paper detail inside every sendable line, separates fact from metaphor, and discourages generic buzzword substitutions.
-
-Paid AI generation is available to verified LINE sessions or authenticated private Sites visitors. For **local development only**, `ALLOW_ANONYMOUS_AI=true` also enables it in the ordinary browser preview. Keep that off for a public deployment. Verified LINE users are limited to ten AI requests per minute.
-
-The built-in library contains verified arXiv papers. With AI enabled, the server can refresh relevant paper metadata through arXiv's public Atom API; it falls back to the reference library if arXiv is unavailable. Set `TAVILY_API_KEY` to discover more papers: Tavily searches arxiv.org for the topic, and the server fetches the metadata for the found IDs from arXiv, so citations still come from arXiv itself. Without the key, or if Tavily fails, the server uses the fixed arXiv title queries. Topic queries contain no chat text. In-process caching and request spacing limit repeated queries.
-
-## Storage and privacy
-
-- Browser-entered conversations live only in page memory. Saved lines use localStorage and contain only the selected reply and reference.
-- LINE imports require server verification of the LIFF ID token and the expected channel ID. Client-provided user IDs are never trusted.
-- Webhooks require an HMAC-SHA256 signature over the unmodified request body. Incoming text is deduplicated by LINE message ID and scoped to the sending user's one-on-one bot chat. Group messages are ignored.
-- Only the latest twelve shared text messages are retained per user. Context is unavailable after 24 hours. Expired rows are physically pruned on subsequent webhook/context requests; there is no scheduled deletion job. `/clear`, clearing a loaded chat, blocking the bot, and unsending imported messages delete the corresponding stored content.
-- The application does not send a generated pickup line automatically. Copying and LINE sharing are explicit user actions.
+| Command | Effect |
+| --- | --- |
+| `/open`, `/start`, `/help` | Replies with a button that opens the app. |
+| `/clear`, `/reset` | Deletes your shared messages. |
+| Any other text | Stores it as shared context; the first message in a 30-second burst gets an app link. |
 
 ## Local database
 
-Build once to emit the Wrangler configuration, then apply each migration once:
+Build once to generate the Wrangler config, then apply each migration once:
 
 ```sh
 npm run build
 node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_greedy_unus.sql
 ```
 
-No LINE channel, OpenAI key, or deployment credentials are included in this repository. The existing Telegram project at the repository root is separate.
+## Storage and privacy
+
+- Conversations typed in the browser stay in page memory. Saved lines go to `localStorage` and hold only the reply and its paper.
+- `/api/context` verifies the LIFF ID token against `LIFF_CHANNEL_ID` with LINE before returning anything. It never trusts a user ID from the client.
+- The webhook verifies LINE's HMAC-SHA256 signature over the raw body before parsing. It stores only one-on-one chats with the bot, ignores groups, and deduplicates by LINE message ID.
+- Each user keeps at most the latest 12 shared messages, and they expire after 24 hours. Expired rows are deleted on the next webhook or context request. `/clear`, clearing a loaded chat in the app, blocking the bot, and unsending a message all delete the stored text.
+- With AI on, the selected messages go to OpenAI with `store: false`. arXiv and Tavily receive only the research topic, never chat text.
+- The app never sends a line for you. Copying and LINE sharing are explicit actions.
