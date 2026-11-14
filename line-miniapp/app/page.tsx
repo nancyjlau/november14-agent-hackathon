@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, ArrowUpRight, BookOpen, Bookmark, Check, ChevronDown, Copy, FlaskConical, Heart, HelpCircle, Leaf, LoaderCircle, MessageCircle, Plus, RefreshCw, Send, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { PAPERS } from "@/lib/rizz/papers";
 import { craftedReplies } from "@/lib/rizz/generate";
+import { shouldInitializeLine } from "@/lib/rizz/liff";
 import type { ChatMessage, Generation, Paper, Role, Suggestion, Topic, Vibe } from "@/lib/rizz/types";
 
 const SAMPLE: ChatMessage[] = [
@@ -55,7 +56,7 @@ export default function Home() {
   useEffect(() => {
     try { const value = JSON.parse(localStorage.getItem("rizz-et-al-saved") ?? "[]"); if (Array.isArray(value)) setSaved(value.filter((x) => typeof x?.text === "string" && typeof x?.paper?.id === "string" && /^\d{4}\.\d{4,5}$/.test(x.paper.id)).slice(0, 50)); } catch { /* Storage is optional. */ }
     setSavedLoaded(true);
-    fetch("/api/config").then((r) => r.json() as Promise<Config>).then((c) => { setConfig(c); if (c.lineReady && new URLSearchParams(location.search).get("import") === "1") void connectLine(c); }).catch(() => {});
+    fetch("/api/config").then((r) => r.json() as Promise<Config>).then((c) => { setConfig(c); if (c.liffId && shouldInitializeLine(location.search)) void connectLine(c); }).catch(() => {});
     return () => run.current?.abort();
     // Import is explicit and runs once. No chat polling.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -99,7 +100,7 @@ export default function Home() {
     catch { setToast("Couldn't share through LINE. You can still copy the line."); }
   }
   async function connectLine(settings: Config | null = config) {
-    if (!settings?.lineReady || !settings.liffId) { setModal("line"); return; }
+    if (!settings?.liffId) { setModal("line"); return; }
     setLineBusy(true); setError("");
     try {
       if (!window.liff) await new Promise<void>((resolve, reject) => { const script = document.createElement("script"); script.src = "https://static.line-scdn.net/liff/edge/2/sdk.js"; script.async = true; script.onload = () => resolve(); script.onerror = () => { script.remove(); reject(new Error("Couldn't load LINE. Check your connection.")); }; document.head.appendChild(script); });
@@ -108,7 +109,7 @@ export default function Home() {
       if (!liff.isLoggedIn()) { const redirect = new URL(location.href); redirect.searchParams.set("import", "1"); liff.login({ redirectUri: redirect.toString() }); return; }
       const token = liff.getIDToken(); if (!token) throw new Error("The LINE app needs the openid scope enabled.");
       const response = await fetch("/api/context", { headers: { Authorization: `Bearer ${token}` } }); const data = await response.json() as { messages: ChatMessage[]; error?: string }; if (!response.ok) throw new Error(data.error);
-      if (!data.messages.length) { setToast("No shared messages yet. Forward a few to the bot, then tap Load from LINE."); return; }
+      if (!data.messages.length) { if (!settings.lineReady) setModal("line"); else setToast("No shared messages yet. Forward a few to the bot, then tap Load from LINE."); return; }
       invalidate(); setMessages(data.messages); setShared(true); setModal(null); setToast("Messages loaded. Tap a speaker label to mark who's talking.");
     } catch (err) { setError(err instanceof Error ? err.message : "Couldn't connect to LINE."); }
     finally { setLineBusy(false); }

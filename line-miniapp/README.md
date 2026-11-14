@@ -13,11 +13,12 @@ npm run dev
 
 Open the Local URL that the dev server prints. The sample conversation and the crafted, paper-specific replies work without any credentials.
 
-`npm run dev` signs you in as a local test user, so AI generation turns on as soon as `OPENAI_API_KEY` is set in `.dev.vars`.
+The dev server supports a local test sign-in at `/signin-with-chatgpt?return_to=/`. With `OPENAI_API_KEY` set, sign in there to test AI generation, or enable `ALLOW_ANONYMOUS_AI` for local-only testing. Verified LINE sessions also authorize AI generation.
 
 ```sh
 npm run check   # TypeScript
-npm run lint
+npm test        # LINE integration and citation regression checks
+npm run lint    # Optional lint check
 npm run build   # Worker in dist/server/, client assets in dist/client/
 npm start       # serves the production build with Wrangler, after npm run build
 ```
@@ -39,6 +40,19 @@ Copy `.dev.vars.example` to `.dev.vars` for local development. In production, se
 | `ALLOW_ANONYMOUS_AI` | Local testing | `true` enables AI for visitors who are not signed in, such as under `npm start`. Keep it `false` on a public deployment. |
 
 The Worker also needs a D1 binding named `DB` for LINE imports and rate limiting.
+
+The tests use in-memory SQLite and mocked LINE requests; they do not send messages or make billable AI calls. They cover webhook signatures, user isolation, deduplication, deletion, expiry, input validation, boundary handling, rejection of invented citations, Tavily discovery fallbacks, and LINE’s wrapped LIFF redirect URLs.
+
+For a temporary HTTPS test endpoint, serve the **built** app and tunnel it:
+
+```sh
+npm run build
+npm start -- --port 8787
+# In a second terminal:
+cloudflared tunnel --protocol http2 --edge-ip-version 4 --url http://127.0.0.1:8787 --no-autoupdate
+```
+
+Use the printed HTTPS URL for the LIFF endpoint, and that URL plus `/api/line/webhook` for the bot webhook. Keep both processes running. A Quick Tunnel URL changes when restarted and is for testing, not permanent hosting. `npm start` loads the ignored root `.dev.vars` file; secrets are not embedded in the build.
 
 ## Connect LINE
 
