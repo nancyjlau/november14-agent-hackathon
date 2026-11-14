@@ -9,6 +9,7 @@
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 
 .hero-art .art-note{bottom:-23px}
+/* Readability pass: no text below 9px, larger tap targets on phones, and visible keyboard focus. These rules come after the base styles so they also win over the breakpoint rules above. */
 button,select,a{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
 :where(button,a,select,input,textarea):focus-visible{outline:2px solid #111111;outline-offset:2px;border-radius:6px}
 .tiny-label,.chat-date,.speaker-label,.range-labels,.citation-detail .citation-author,.library-card-top{font-size:10px}.citation-eyebrow,.dialog-kicker,.generation-mode{font-size:9px}
@@ -33,14 +34,16 @@ button,select,a{cursor:pointer}button:disabled{cursor:not-allowed;opacity:.55}
 .app-dialog{width:calc(100vw - 24px);padding:30px 20px 24px}.app-dialog h2{font-size:34px;padding-right:28px}.dialog-close{right:8px;top:8px}.how-steps p,.app-dialog>p,.privacy-copy p{font-size:13px}
 nav button{min-height:40px}.toast{bottom:max(18px,env(safe-area-inset-bottom))}
 }
+/* Comic Sans everywhere. Phones without it, which includes most Android devices in LINE, fall back to Comic Neue from Google Fonts. Text that sits directly on the rainbow gets dark ink and a light halo so it stays readable on every band. */
 :root{--comic:"Comic Sans MS","Comic Sans","Comic Neue",cursive;--sans:var(--comic);--serif:var(--comic);--mono:var(--comic)}
-body{background:linear-gradient(180deg,#ff2d12 0%,#ff7a0a 14%,#ffb20a 24%,#f5d80c 31%,#c5ec18 40%,#6fe83a 50%,#3fbf8a 58%,#4f7fe0 65%,#7f3ff0 73%,#b414e8 81%,#e012d8 90%,#ff12b4 100%) fixed;min-height:100vh}
 .hero-copy>p,.hero-copy .eyebrow,.hero-meta,.hero-meta>span,.lab-heading,.lab-heading>span,.results-top,.results-panel>.section-subtitle,.result-count,.result-footer>span,.result-footer .text-button,.crafted-note,.under-lab>span,.site-footer,.site-footer>p,.site-footer>button,.footer-brand,.how-button,.collection-page>.eyebrow,.collection-intro,.back-button,.art-note,h1,h1>span,.empty-annotation{color:#111111;text-shadow:0 0 6px #fffefacc,0 0 2px #fffefa}
 h1>span{color:#111111}.status-dot{background:#e0157f}
 .generation-mode{color:#111111;background:#fffefae6;border-color:#fffefa}
 .site-header nav,nav{background:#fffefad9}.site-header{border-bottom-color:#fffefa99}.lab-heading,.site-footer{border-top-color:#fffefa99}
 .citation-eyebrow{display:block}
+/* The lab is a single centered column at every width, with the reply cards under the controls. */
 .lab-grid{grid-template-columns:minmax(0,1fr);max-width:640px;margin:0 auto;gap:8px}
+/* Chat bar: an always-visible composer under the conversation. The speaker pill toggles them/you, and the textarea grows with its content. */
 .chat-composer{display:flex;align-items:flex-end;gap:8px;background:#fff3f9;border:1px solid #f3c6dc;border-radius:22px;padding:6px 6px 6px 8px;margin-top:6px;transition:border-color .15s,box-shadow .15s}
 .chat-composer:focus-within{border-color:#111111;box-shadow:0 0 0 3px #11111166}
 .chat-composer textarea{flex:1;border:0;background:transparent;resize:none;font:13px/1.5 var(--sans);color:var(--ink);padding:8px 2px;max-height:120px;field-sizing:content;outline:none}
@@ -50,6 +53,7 @@ h1>span{color:#111111}.status-dot{background:#e0157f}
 .composer-send{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#d0609a;flex-shrink:0;transition:transform .15s}
 .composer-send:hover:not(:disabled){transform:scale(1.06)}
 .chat-actions{align-items:center}.chat-actions>span{font-size:10px;color:#e0157f}
+/* Reply citations render like a paper: a superscript [n] after the line and a boxed footnote under it that opens the paper details. Phones stack the footnote under "copy line"; wider screens put them on one row. */
 .cite-mark{font-size:.45em;vertical-align:super;margin-left:3px;color:#e0157f;line-height:0}
 .citation-toggle{flex:1;min-width:0;gap:8px;border:1px solid #f3c6dc;border-radius:10px;padding:8px 12px;background:#fbfcf7;color:#111111;text-align:left}
 .citation-toggle>span:not(.footnote-number){flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -60,6 +64,7 @@ h1>span{color:#111111}.status-dot{background:#e0157f}
 .suggestion-bottom .citation-toggle{justify-content:flex-start}.suggestion-bottom .citation-toggle>span:not(.footnote-number){text-align:left;flex:1 1 auto}
 .citation-toggle>.footnote-number{flex:none}
 @media(min-width:601px){.suggestion-bottom{flex-wrap:nowrap}.suggestion-bottom .citation-toggle{flex:1 1 0;order:1}.suggestion-bottom .copy-button{order:2}}
+/* Slide-deck theme: diagonal rainbow, white cards with black borders and flat shadows, hot-pink accents. --green keeps its name because the base rules above read it, but it now holds the pink accent. */
 :root{--green:#e0157f;--pink:#e0157f}
 body{background:linear-gradient(160deg,#f2421b 0%,#f77f1a 16%,#f6c21a 30%,#d6e21c 40%,#52d84a 52%,#2fb8b0 60%,#3d63e8 70%,#8a2be8 82%,#c418d8 92%,#e21cc0 100%) fixed}
 .brand,.brand em,.footer-brand,.footer-brand em{color:var(--pink);font-weight:700}
