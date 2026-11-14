@@ -9,6 +9,6 @@ export type Paper = {
 export type Suggestion = { text: string; paperId: string; explanation: string; label: string };
 export type Generation = {
   suggestions: Suggestion[]; papers: Paper[]; topic: Topic;
-  mode: "ai" | "crafted"; paperSource: "arxiv" | "library";
+  mode: "ai" | "crafted"; paperSource: "tavily" | "arxiv" | "library";
   boundary: boolean;
 };

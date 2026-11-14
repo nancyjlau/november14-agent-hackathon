@@ -22,7 +22,7 @@ export async function POST(request: Request) {
       const user = await lineUser(request); await rateLimit(`generate:${user}`); aiAuthorized = true;
     }
     const topic = chooseTopic(messages, selected);
-    const { papers, source } = env.OPENAI_API_KEY && aiAuthorized ? await findPapers(topic) : { papers: PAPERS.filter((p) => p.topics.includes(topic)), source: "library" as const };
+    const { papers, source } = env.OPENAI_API_KEY && aiAuthorized ? await findPapers(topic, env.TAVILY_API_KEY) : { papers: PAPERS.filter((p) => p.topics.includes(topic)), source: "library" as const };
     const ai = env.OPENAI_API_KEY && aiAuthorized ? await generateWithAI(env.OPENAI_API_KEY, env.OPENAI_MODEL || "gpt-4.1-mini", messages, vibe, nerd, papers) : null;
     const suggestions = ai ?? craftedReplies(messages, vibe, nerd, topic, variation);
     const used = new Set(suggestions.map((s) => s.paperId));

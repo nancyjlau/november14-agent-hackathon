@@ -39,7 +39,15 @@ const queries: Record<Exclude<Topic, "auto">, string> = {
   scaling: 'ti:"Grokking" OR ti:"Training Compute-Optimal Large Language Models" OR ti:"Language Models are Few-Shot Learners"',
   alignment: 'ti:"Training language models to follow instructions with human feedback"',
 };
-type PaperResult = { papers: Paper[]; source: "arxiv" | "library" };
+const tavilyQueries: Record<Exclude<Topic, "auto">, string> = {
+  attention: "transformer attention mechanism paper",
+  diffusion: "denoising diffusion generative model paper",
+  learning: "meta-learning parameter-efficient fine-tuning paper",
+  scaling: "scaling laws large language models generalization paper",
+  alignment: "reinforcement learning from human feedback language model alignment paper",
+};
+const mlCategories = "cat:cs.LG OR cat:cs.CL OR cat:cs.CV OR cat:stat.ML OR cat:cs.AI";
+type PaperResult = { papers: Paper[]; source: "tavily" | "arxiv" | "library" };
 const cache = new Map<Topic, { expires: number; value: PaperResult }>();
 let pending: Promise<unknown> = Promise.resolve();
 let lastRequest = 0;
@@ -73,7 +81,20 @@ export function parseArxiv(xml: string, topic: Topic): Paper[] {
   });
 }
 
-export async function findPapers(topic: Exclude<Topic, "auto">): Promise<PaperResult> {
+/** Searches arxiv.org through Tavily and returns up to four distinct arXiv IDs for the topic. */
+async function tavilyArxivIds(key: string, topic: Exclude<Topic, "auto">): Promise<string[]> {
+  const response = await fetch("https://api.tavily.com/search", {
+    method: "POST", signal: AbortSignal.timeout(6500),
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ query: tavilyQueries[topic], include_domains: ["arxiv.org"], search_depth: "basic", max_results: 8 }),
+  });
+  if (!response.ok) return [];
+  const { results } = await response.json() as { results: { url: string }[] };
+  const ids = results.flatMap((r) => r.url.match(/arxiv\.org\/(?:abs|pdf|html)\/(\d{4}\.\d{4,5})/)?.[1] ?? []);
+  return [...new Set(ids)].slice(0, 4);
+}
+
+export async function findPapers(topic: Exclude<Topic, "auto">, tavilyKey?: string): Promise<PaperResult> {
   const cached = cache.get(topic);
   if (cached && cached.expires > Date.now()) return cached.value;
   const fallback: PaperResult = { papers: PAPERS.filter((p) => p.topics.includes(topic)), source: "library" };
@@ -81,21 +102,27 @@ export async function findPapers(topic: Exclude<Topic, "auto">): Promise<PaperRe
   const job = pending.catch(() => {}).then(async () => {
     const secondCheck = cache.get(topic);
     if (secondCheck && secondCheck.expires > Date.now()) return secondCheck.value;
+    // Tavily only discovers IDs; arXiv supplies the metadata, so every citation still resolves to a real paper.
+    // A Tavily failure falls back to the fixed arXiv title query.
+    const ids = tavilyKey ? await tavilyArxivIds(tavilyKey, topic).catch(() => []) : [];
     const delay = Math.max(0, 3100 - (Date.now() - lastRequest));
     if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
     lastRequest = Date.now();
     let value = fallback;
     try {
       const url = new URL("https://export.arxiv.org/api/query");
-      url.searchParams.set("search_query", `(${queries[topic]}) AND (cat:cs.LG OR cat:cs.CL OR cat:cs.CV OR cat:stat.ML OR cat:cs.AI)`);
-      url.searchParams.set("max_results", "3");
+      if (ids.length) {
+        url.searchParams.set("id_list", ids.join(","));
+        url.searchParams.set("search_query", mlCategories);
+      } else url.searchParams.set("search_query", `(${queries[topic]}) AND (${mlCategories})`);
+      url.searchParams.set("max_results", String(ids.length || 3));
       const response = await fetch(url, { signal: AbortSignal.timeout(6500), headers: { "User-Agent": "rizz et al./1.0 (arXiv-backed conversation companion)" } });
       if (response.ok) {
         const papers = parseArxiv(await response.text(), topic);
-        if (papers.length) value = { papers, source: "arxiv" };
+        if (papers.length) value = { papers, source: ids.length ? "tavily" : "arxiv" };
       }
     } catch { /* The verified library is available during an arXiv outage. */ }
-    cache.set(topic, { expires: Date.now() + (value.source === "arxiv" ? 3_600_000 : 300_000), value });
+    cache.set(topic, { expires: Date.now() + (value.source === "library" ? 300_000 : 3_600_000), value });
     return value;
   });
   pending = job;

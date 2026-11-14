@@ -4,6 +4,7 @@ declare namespace Cloudflare {
     BUCKET?: R2Bucket;
     OPENAI_API_KEY?: string;
     OPENAI_MODEL?: string;
+    TAVILY_API_KEY?: string;
     LINE_CHANNEL_SECRET?: string;
     LINE_CHANNEL_ACCESS_TOKEN?: string;
     LIFF_ID?: string;

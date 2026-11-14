@@ -43,7 +43,7 @@ Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` (default `gpt-4.1-mini`). Cal
 
 Paid AI generation is available to verified LINE sessions or authenticated private Sites visitors. For **local development only**, `ALLOW_ANONYMOUS_AI=true` also enables it in the ordinary browser preview. Keep that off for a public deployment. Verified LINE users are limited to ten AI requests per minute.
 
-The built-in library contains verified arXiv papers. With AI enabled, the server can refresh relevant paper metadata through arXiv's public Atom API; it falls back to the reference library if arXiv is unavailable. Topic queries contain no chat text. In-process caching and request spacing limit repeated queries.
+The built-in library contains verified arXiv papers. With AI enabled, the server can refresh relevant paper metadata through arXiv's public Atom API; it falls back to the reference library if arXiv is unavailable. Set `TAVILY_API_KEY` to discover more papers: Tavily searches arxiv.org for the topic, and the server fetches the metadata for the found IDs from arXiv, so citations still come from arXiv itself. Without the key, or if Tavily fails, the server uses the fixed arXiv title queries. Topic queries contain no chat text. In-process caching and request spacing limit repeated queries.
 
 ## Storage and privacy
 
