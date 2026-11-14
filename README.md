@@ -6,13 +6,15 @@ rizz et al. is a LINE mini app that helps you text your crush when your crush is
 
 Built at Tokyo AgentForge on November 14, 2026.
 
-![rizz et al. home screen with a sample conversation and three cited replies](docs/screenshot.png)
+![rizz et al. home screen: a tilted title card on a rainbow background, the sample conversation with its chat bar, and cited replies with footnotes](docs/screenshot.png)
+
+The look matches our pitch deck: a rainbow background, Comic Sans, hot-pink headings, and white cards with black borders. The lab runs as one column, so it reads the same on a phone in LINE as on a laptop.
 
 ## What it does
 
-- **Reads only what you share.** The app can't see LINE history. You forward the messages you want help with to the bot, or type them in the app, then mark which ones are yours and which are theirs.
+- **Reads only what you share.** The app can't see LINE history. You forward the messages you want help with to the bot, or type them into the chat bar under the conversation: pick "them" or "you", type, and press Enter. Tap a speaker label to fix who said what.
 - **Writes three replies.** You pick an energy (lowkey, playful, or bold), how deep into the literature to go (subtle citation to full transformer), and a research topic, or let the chat pick one.
-- **Cites every line.** Each reply names its paper and explains the connection, such as LoRA's frozen weights or the Transformer's eight attention heads. You can copy a line, copy it with the citation, share it through LINE, or save it for later.
+- **Cites every line, like a paper.** Each reply ends with a footnote marker such as `[1]`, and the footnote under it names the paper. Tap the footnote to see the authors, the arXiv ID, and how the line uses the paper, such as LoRA's frozen weights or the Transformer's eight attention heads. You can copy a line, copy it with the citation, share it through LINE, or save it for later.
 - **Backs off on a no.** If their last message sets a boundary, like "not interested" or "please stop", the app writes no lines and offers a considerate reply instead.
 
 ## How a reply is made
