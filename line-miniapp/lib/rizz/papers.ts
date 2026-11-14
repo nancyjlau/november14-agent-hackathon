@@ -39,6 +39,10 @@ const queries: Record<Exclude<Topic, "auto">, string> = {
   scaling: 'ti:"Grokking" OR ti:"Training Compute-Optimal Large Language Models" OR ti:"Language Models are Few-Shot Learners"',
   alignment: 'ti:"Training language models to follow instructions with human feedback"',
 };
+/**
+ * Tavily search queries, one per topic. Only these fixed strings reach Tavily; the user's chat text never does.
+ * Tavily ranks the web pages, and include_domains in tavilyArxivIds keeps the results on arxiv.org.
+ */
 const tavilyQueries: Record<Exclude<Topic, "auto">, string> = {
   attention: "transformer attention mechanism paper",
   diffusion: "denoising diffusion generative model paper",
@@ -81,7 +85,11 @@ export function parseArxiv(xml: string, topic: Topic): Paper[] {
   });
 }
 
-/** Searches arxiv.org through Tavily and returns up to four distinct arXiv IDs for the topic. */
+/**
+ * Searches arxiv.org through Tavily and returns up to four distinct arXiv IDs for the topic.
+ * Tavily returns abs, pdf, and html URLs for the same paper, so the IDs are deduplicated. Version suffixes are dropped,
+ * and a non-OK response returns no IDs. A network error or the 6.5-second timeout throws, and findPapers treats it as no IDs.
+ */
 async function tavilyArxivIds(key: string, topic: Exclude<Topic, "auto">): Promise<string[]> {
   const response = await fetch("https://api.tavily.com/search", {
     method: "POST", signal: AbortSignal.timeout(6500),
@@ -104,6 +112,7 @@ export async function findPapers(topic: Exclude<Topic, "auto">, tavilyKey?: stri
     if (secondCheck && secondCheck.expires > Date.now()) return secondCheck.value;
     // Tavily only discovers IDs; arXiv supplies the metadata, so every citation still resolves to a real paper.
     // A Tavily failure falls back to the fixed arXiv title query.
+    // Without TAVILY_API_KEY this skips Tavily and goes straight to the fixed arXiv title query.
     const ids = tavilyKey ? await tavilyArxivIds(tavilyKey, topic).catch(() => []) : [];
     const delay = Math.max(0, 3100 - (Date.now() - lastRequest));
     if (delay) await new Promise((resolve) => setTimeout(resolve, delay));
@@ -111,6 +120,7 @@ export async function findPapers(topic: Exclude<Topic, "auto">, tavilyKey?: stri
     let value = fallback;
     try {
       const url = new URL("https://export.arxiv.org/api/query");
+      // Tavily's IDs are looked up directly. The ML category filter drops any Tavily hit outside machine learning.
       if (ids.length) {
         url.searchParams.set("id_list", ids.join(","));
         url.searchParams.set("search_query", mlCategories);
@@ -119,9 +129,16 @@ export async function findPapers(topic: Exclude<Topic, "auto">, tavilyKey?: stri
       const response = await fetch(url, { signal: AbortSignal.timeout(6500), headers: { "User-Agent": "rizz et al./1.0 (arXiv-backed conversation companion)" } });
       if (response.ok) {
         const papers = parseArxiv(await response.text(), topic);
+        // paperSource "tavily" tells the client that Tavily chose the papers, even though arXiv supplied their metadata.
         if (papers.length) value = { papers, source: ids.length ? "tavily" : "arxiv" };
       }
     } catch { /* The verified library is available during an arXiv outage. */ }
+    // Future work, not implemented: ground lines in the full paper text with Daytona.
+    // Lines can only use what the abstract says. A Daytona sandbox could download each paper's PDF from arxiv.org,
+    // extract the text, and return a few short passages for generateWithAI to quote, such as a method detail or a result.
+    // Parsing untrusted PDFs would happen in the disposable sandbox instead of this Worker, and the sandbox would only
+    // receive arXiv IDs, never chat text. The citation check in generate.ts would stay the same, because the paper IDs
+    // would still come from this function.
     cache.set(topic, { expires: Date.now() + (value.source === "library" ? 300_000 : 3_600_000), value });
     return value;
   });
