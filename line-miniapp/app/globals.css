@@ -59,3 +59,17 @@ h1>span{color:#2f4a20}.status-dot{background:#2f4a20}
 .suggestion-bottom{flex-wrap:wrap}.suggestion-bottom .citation-toggle{flex:1 1 100%;order:2}.suggestion-bottom .copy-button{order:1;margin-left:auto}.citation-toggle>span{text-align:left}
 .suggestion-bottom .citation-toggle{justify-content:flex-start}.suggestion-bottom .citation-toggle>span:not(.footnote-number){text-align:left;flex:1 1 auto}
 .citation-toggle>.footnote-number{flex:none}
+@media(min-width:601px){.suggestion-bottom{flex-wrap:nowrap}.suggestion-bottom .citation-toggle{flex:1 1 0;order:1}.suggestion-bottom .copy-button{order:2}}
+:root{--green:#e0157f;--pink:#e0157f}
+body{background:linear-gradient(160deg,#f2421b 0%,#f77f1a 16%,#f6c21a 30%,#d6e21c 40%,#52d84a 52%,#2fb8b0 60%,#3d63e8 70%,#8a2be8 82%,#c418d8 92%,#e21cc0 100%) fixed}
+.brand,.brand em,.footer-brand,.footer-brand em{color:var(--pink);font-weight:700}
+.hero-copy{background:#fff;border:3px solid #111;padding:28px 34px;transform:rotate(-2.5deg);box-shadow:6px 6px 0 #1112}
+.hero-copy h1,.hero-copy h1>span{color:var(--pink);font-weight:700;text-shadow:none}.hero-copy>p,.hero-copy .eyebrow,.hero-meta,.hero-meta>span{color:#111;text-shadow:none}.headline-spark{color:var(--pink)}
+.context-card,.suggestion-card,.suggestion-card.featured,.library-card,.app-dialog,.empty-saved,.empty-results,.research-note{background:#fff;border:2.5px solid #111;border-radius:6px;box-shadow:5px 5px 0 #1112}
+.suggestion-card.featured{transform:rotate(-.6deg)}.citation-detail{background:#fff7fb;border-top:2px dashed #111}
+.generate-button,.composer-send,.composer-role.you{background:var(--pink);border-color:#111;color:#fff}.generate-button:hover:not(:disabled){background:#c20f6c}
+.vibe-picker button.selected{background:#ffe6f2;border-color:var(--pink);color:var(--pink)}
+.cite-mark,.footnote-number,.is-saved,.little-star{color:var(--pink)}
+.citation-toggle{border:2px solid #111;border-radius:4px;color:#111}.copy-button{border:2px solid #111;border-radius:4px;color:#111}
+.section-title h2{font-weight:700}nav button.active{color:var(--pink)}
+@media(max-width:600px){.hero-copy{padding:22px 20px;margin-right:0}.hero{overflow:visible}}
