@@ -29,6 +29,10 @@ The look matches our pitch deck: a rainbow background, Comic Sans, hot-pink head
 
 - **Tavily** finds arXiv papers for each topic, so replies can draw on more than the built-in library. See `tavilyArxivIds` and `findPapers` in [`line-miniapp/lib/rizz/papers.ts`](line-miniapp/lib/rizz/papers.ts).
 
+## Future work
+
+- **Full-paper grounding with Daytona (not built yet).** Replies can only use what a paper's abstract says. The plan is to have a [Daytona](https://www.daytona.io) sandbox download each paper's PDF from arxiv.org, extract the text, and return a few short passages, such as a method detail or a result, for the AI to quote. The untrusted PDF parsing would run in a disposable sandbox instead of the Cloudflare Worker, and the sandbox would receive only arXiv IDs, never chat text. Citations would still be checked against the papers `findPapers` returns. The note in `findPapers` in [`line-miniapp/lib/rizz/papers.ts`](line-miniapp/lib/rizz/papers.ts) marks where this step would go.
+
 ## Stack
 
 - Next.js App Router on [vinext](https://github.com/cloudflare/vinext), running as a Cloudflare Worker
